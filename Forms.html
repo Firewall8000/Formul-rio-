@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro e Relatório de Clientes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #clientesList {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #clientesList th, #clientesList td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #clientesList th {
+            background-color: #f2f2f2;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastro de Clientes</h1>
+        <div id="message" class="message" style="display: none;"></div>
+        <form id="cadastroForm">
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" required>
+
+            <label for="email">E-mail:</label>
+            <input type="email" id="email" required>
+
+            <label for="telefone">Telefone:</label>
+            <input type="text" id="telefone">
+
+            <button type="submit">Cadastrar Cliente</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Relatório de Clientes</h2>
+        <table id="clientesList">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000'; // URL da sua API Node.js
+
+        const cadastroForm = document.getElementById('cadastroForm');
+        const clientesListBody = document.querySelector('#clientesList tbody');
+        const messageDiv = document.getElementById('message');
+
+        // Função para exibir mensagens (sucesso/erro)
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Função para carregar clientes
+        async function carregarClientes() {
+            try {
+                const response = await fetch(`${API_URL}/clientes`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP! status: ${response.status}`);
+                }
+                const clientes = await response.json();
+                clientesListBody.innerHTML = ''; // Limpa a lista antes de adicionar
+                clientes.forEach(cliente => {
+                    const row = clientesListBody.insertRow();
+                    row.insertCell().textContent = cliente.id;
+                    row.insertCell().textContent = cliente.nome;
+                    row.insertCell().textContent = cliente.email;
+                    row.insertCell().textContent = cliente.telefone;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar clientes:', error);
+                showMessage('Erro ao carregar clientes.', 'error');
+            }
+        }
+
+        // Evento de submissão do formulário
+        cadastroForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Impede o recarregamento da página
+
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const telefone = document.getElementById('telefone').value;
+
+            try {
+                const response = await fetch(`${API_URL}/clientes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nome, email, telefone })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showMessage(result.message, 'success');
+                cadastroForm.reset(); // Limpa o formulário
+                carregarClientes(); // Recarrega a lista de clientes
+            } catch (error) {
+                console.error('Erro ao cadastrar cliente:', error);
+                showMessage('Erro ao cadastrar cliente.', 'error');
+            }
+        });
+
+        // Carrega os clientes ao carregar a página
+        document.addEventListener('DOMContentLoaded', carregarClientes);
+    </script>
+</body>
+</html>
